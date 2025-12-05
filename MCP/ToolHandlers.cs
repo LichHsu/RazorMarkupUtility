@@ -126,4 +126,19 @@ public static class ToolHandlers
         var result = RazorRefactorer.BatchRenameClassUsage(directory, oldClass, newClass, recursive);
         return JsonSerializer.Serialize(result, _jsonOptions);
     }
+
+    public static string HandleAppendRazorElement(JsonElement args)
+    {
+        string path = args.GetProperty("path").GetString()!;
+        string xpath = args.GetProperty("xpath").GetString()!;
+        string newHtml = args.GetProperty("newHtml").GetString()!;
+
+        if (!File.Exists(path)) throw new FileNotFoundException("File not found", path);
+
+        string content = File.ReadAllText(path);
+        string newContent = RazorDomModifier.AppendElement(content, xpath, newHtml);
+        File.WriteAllText(path, newContent);
+
+        return "Element appended successfully.";
+    }
 }

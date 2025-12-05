@@ -57,13 +57,25 @@ dotnet run
     *   `wrapperTag` (e.g. "div")
     *   `attributes` (optional)
 
-### 5. `split_razor_batch`
+### 5. `append_razor_element`
+在指定元素內部添加新的 HTML 子節點。
+*   **參數**:
+    *   `path`
+    *   `xpath`
+    *   `newHtml`
+
+### 6. `split_razor_file`
+拆分單個 Razor 檔案 (HTML/C#/CSS)。
+*   **參數**:
+    *   `path`: Razor 檔案路徑
+
+### 7. `split_razor_batch`
 批次拆分 Razor 檔案 (HTML/C#/CSS)。
 *   **參數**:
     *   `directory`
     *   `recursive` (default: false)
 
-### 6. `batch_rename_class_usage`
+### 8. `batch_rename_class_usage`
 批次重新命名 CSS Class 使用 (跨檔案)。
 *   **參數**:
     *   `directory`

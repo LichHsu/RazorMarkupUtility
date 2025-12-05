@@ -26,7 +26,20 @@ public static class TestRunner
         try { TestRazorSplitting(); passed++; Console.WriteLine("✓ TestRazorSplitting Passed"); }
         catch (Exception ex) { failed++; Console.WriteLine($"✗ TestRazorSplitting Failed: {ex.Message}"); }
 
+        try { TestAppendElement(); passed++; Console.WriteLine("✓ TestAppendElement Passed"); }
+        catch (Exception ex) { failed++; Console.WriteLine($"✗ TestAppendElement Failed: {ex.Message}"); }
+
         Console.WriteLine($"=== Tests Completed: {passed} Passed, {failed} Failed ===");
+    }
+
+    private static void TestAppendElement()
+    {
+        string html = "<div id='parent'><span>Existing</span></div>";
+        string newHtml = RazorDomModifier.AppendElement(html, "//div[@id='parent']", "<button>New Button</button>");
+
+        Assert(newHtml.Contains("<button>New Button</button>"), "Should contain new element");
+        Assert(newHtml.Contains("<span>Existing</span>"), "Should preserve existing content");
+        // HtmlAgilityPack formatting might vary, but generally it appends to end
     }
 
     private static void TestRazorSplitting()

@@ -187,6 +187,22 @@ internal class Program
             },
             new
             {
+                name = "append_razor_element",
+                description = "Appends a new element as a child of the target element.",
+                inputSchema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        path = new { type = "string" },
+                        xpath = new { type = "string" },
+                        newHtml = new { type = "string", description = "The HTML content to append" }
+                    },
+                    required = new[] { "path", "xpath", "newHtml" }
+                }
+            },
+            new
+            {
                 name = "split_razor_file",
                 description = "Splits a .razor file into .razor, .razor.cs, and .razor.css.",
                 inputSchema = new
@@ -245,6 +261,7 @@ internal class Program
             "query_razor_elements" => ToolHandlers.HandleQueryRazorElements(args),
             "update_razor_element" => ToolHandlers.HandleUpdateRazorElement(args),
             "wrap_razor_element" => ToolHandlers.HandleWrapRazorElement(args),
+            "append_razor_element" => ToolHandlers.HandleAppendRazorElement(args),
             "split_razor_file" => ToolHandlers.HandleSplitRazorFile(args),
             "split_razor_batch" => ToolHandlers.HandleSplitRazorBatch(args),
             "batch_rename_class_usage" => ToolHandlers.HandleBatchRenameClassUsage(args),
