@@ -81,6 +81,15 @@ dotnet run
     *   `directory`
     *   `oldClass`
     *   `newClass`
+    *   `oldClass`
+    *   `newClass`
+    *   `recursive` (default: true)
+
+### 9. `get_used_css_classes`
+掃描 Razor/HTML 檔案並回傳已使用的 CSS Class 列表。
+*   **參數**:
+    *   `path` (單一檔案)
+    *   `directory` (目錄)
     *   `recursive` (default: true)
 
 ## 💻 CLI 命令列模式 (CLI Mode)

@@ -141,4 +141,27 @@ public static class ToolHandlers
 
         return "Element appended successfully.";
     }
+
+    public static string HandleGetUsedCssClasses(JsonElement args)
+    {
+        if (args.TryGetProperty("directory", out var d))
+        {
+             string dir = d.GetString()!;
+             bool recursive = !args.TryGetProperty("recursive", out var r) || r.GetBoolean();
+             var classes = RazorAnalyzer.GetUsedClassesFromDirectory(dir, recursive);
+             return JsonSerializer.Serialize(classes, _jsonOptions);
+        }
+        else if (args.TryGetProperty("path", out var p))
+        {
+            string path = p.GetString()!;
+             if (!File.Exists(path)) throw new FileNotFoundException("File not found", path);
+            string content = File.ReadAllText(path);
+            var classes = RazorAnalyzer.GetUsedClasses(content);
+            return JsonSerializer.Serialize(classes, _jsonOptions);
+        }
+        else
+        {
+            throw new ArgumentException("Must provide 'directory' or 'path'.");
+        }
+    }
 }

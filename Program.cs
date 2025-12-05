@@ -246,6 +246,21 @@ internal class Program
                     },
                     required = new[] { "directory", "oldClass", "newClass" }
                 }
+            },
+            new
+            {
+                name = "get_used_css_classes",
+                description = "Scans Razor/HTML files and returns a list of used CSS classes.",
+                inputSchema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        path = new { type = "string", description = "Path to a single file" },
+                        directory = new { type = "string", description = "Directory to scan" },
+                        recursive = new { type = "boolean", description = "Whether to scan recursively (default true)" }
+                    }
+                }
             }
         ];
     }
@@ -265,6 +280,7 @@ internal class Program
             "split_razor_file" => ToolHandlers.HandleSplitRazorFile(args),
             "split_razor_batch" => ToolHandlers.HandleSplitRazorBatch(args),
             "batch_rename_class_usage" => ToolHandlers.HandleBatchRenameClassUsage(args),
+            "get_used_css_classes" => ToolHandlers.HandleGetUsedCssClasses(args),
             _ => throw new Exception($"Unknown tool: {name}")
         };
 

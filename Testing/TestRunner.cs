@@ -29,6 +29,9 @@ public static class TestRunner
         try { TestAppendElement(); passed++; Console.WriteLine("✓ TestAppendElement Passed"); }
         catch (Exception ex) { failed++; Console.WriteLine($"✗ TestAppendElement Failed: {ex.Message}"); }
 
+        try { TestRazorAnalyzer(); passed++; Console.WriteLine("✓ TestRazorAnalyzer Passed"); }
+        catch (Exception ex) { failed++; Console.WriteLine($"✗ TestRazorAnalyzer Failed: {ex.Message}"); }
+
         Console.WriteLine($"=== Tests Completed: {passed} Passed, {failed} Failed ===");
     }
 
@@ -139,6 +142,23 @@ public static class TestRunner
         string newHtml = RazorDomModifier.WrapElement(html, "//button", "div", new Dictionary<string, string> { { "class", "wrapper" } });
 
         Assert(newHtml.Contains("<div class=\"wrapper\"><button>Click</button></div>"), "Should wrap element");
+    }
+
+    private static void TestRazorAnalyzer()
+    {
+        string html = "<div class='a b'> <span class=' c  d '></span> </div>";
+        var classes = RazorAnalyzer.GetUsedClasses(html);
+        
+        Assert(classes.Contains("a"), "Should contain 'a'");
+        Assert(classes.Contains("b"), "Should contain 'b'");
+        Assert(classes.Contains("c"), "Should contain 'c'");
+        Assert(classes.Contains("d"), "Should contain 'd'");
+        Assert(classes.Count == 4, "Should have exactly 4 classes");
+
+        // Duplicate test
+        string html2 = "<div class='a'></div><span class='a'></span>";
+        var classes2 = RazorAnalyzer.GetUsedClasses(html2);
+        Assert(classes2.Count == 1, "Should have unique classes");
     }
 
     private static void Assert(bool condition, string message)
