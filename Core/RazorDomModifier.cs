@@ -69,4 +69,38 @@ public static class RazorDomModifier
 
         return doc.DocumentNode.OuterHtml;
     }
+
+    public static string RenameClassUsage(string content, string oldClass, string newClass)
+    {
+        var doc = RazorDomParser.Load(content);
+        var nodes = doc.DocumentNode.SelectNodes("//*[@class]");
+
+        if (nodes != null)
+        {
+            foreach (var node in nodes)
+            {
+                var classAttr = node.Attributes["class"];
+                if (classAttr != null)
+                {
+                    var classes = classAttr.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    bool modified = false;
+                    for (int i = 0; i < classes.Length; i++)
+                    {
+                        if (classes[i] == oldClass)
+                        {
+                            classes[i] = newClass;
+                            modified = true;
+                        }
+                    }
+
+                    if (modified)
+                    {
+                        classAttr.Value = string.Join(" ", classes);
+                    }
+                }
+            }
+        }
+
+        return doc.DocumentNode.OuterHtml;
+    }
 }

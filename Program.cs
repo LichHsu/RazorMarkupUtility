@@ -20,10 +20,37 @@ internal class Program
         Console.OutputEncoding = new UTF8Encoding(false);
         Console.InputEncoding = new UTF8Encoding(false);
 
-        if (args.Length > 0 && args[0] == "--test")
+        if (args.Length > 0)
         {
-            RazorMarkupUtility.Testing.TestRunner.RunAllTests();
-            return;
+            if (args[0] == "--test")
+            {
+                RazorMarkupUtility.Testing.TestRunner.RunAllTests();
+                return;
+            }
+            
+            if (args[0] == "split-batch")
+            {
+                // Usage: split-batch <directory> [recursive]
+                string directory = args[1];
+                bool recursive = args.Length > 2 && bool.Parse(args[2]);
+                
+                var paths = Directory.GetFiles(directory, "*.razor", recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+                Console.WriteLine(RazorMarkupUtility.Operations.RazorSplitter.BatchSplit(paths));
+                return;
+            }
+
+            if (args[0] == "rename-class")
+            {
+                // Usage: rename-class <directory> <oldClass> <newClass> [recursive]
+                string directory = args[1];
+                string oldClass = args[2];
+                string newClass = args[3];
+                bool recursive = args.Length <= 4 || bool.Parse(args[4]);
+
+                var result = RazorMarkupUtility.Operations.RazorRefactorer.BatchRenameClassUsage(directory, oldClass, newClass, recursive);
+                Console.WriteLine(JsonSerializer.Serialize(result, _jsonOptions));
+                return;
+            }
         }
 
         Log("=== Razor Markup Server Started ===");
@@ -186,6 +213,23 @@ internal class Program
                         recursive = new { type = "boolean", description = "Whether to search recursively (default false)" }
                     }
                 }
+            },
+            new
+            {
+                name = "batch_rename_class_usage",
+                description = "Batch renames CSS class usage across multiple Razor files.",
+                inputSchema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        directory = new { type = "string", description = "Directory to search" },
+                        oldClass = new { type = "string", description = "Class name to replace" },
+                        newClass = new { type = "string", description = "New class name" },
+                        recursive = new { type = "boolean", description = "Recursive search (default true)" }
+                    },
+                    required = new[] { "directory", "oldClass", "newClass" }
+                }
             }
         ];
     }
@@ -203,6 +247,7 @@ internal class Program
             "wrap_razor_element" => ToolHandlers.HandleWrapRazorElement(args),
             "split_razor_file" => ToolHandlers.HandleSplitRazorFile(args),
             "split_razor_batch" => ToolHandlers.HandleSplitRazorBatch(args),
+            "batch_rename_class_usage" => ToolHandlers.HandleBatchRenameClassUsage(args),
             _ => throw new Exception($"Unknown tool: {name}")
         };
 

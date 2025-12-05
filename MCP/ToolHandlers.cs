@@ -115,4 +115,15 @@ public static class ToolHandlers
 
         return RazorSplitter.BatchSplit(paths.Distinct());
     }
+
+    public static string HandleBatchRenameClassUsage(JsonElement args)
+    {
+        string directory = args.GetProperty("directory").GetString()!;
+        string oldClass = args.GetProperty("oldClass").GetString()!;
+        string newClass = args.GetProperty("newClass").GetString()!;
+        bool recursive = !args.TryGetProperty("recursive", out var r) || r.GetBoolean(); // Default true
+
+        var result = RazorRefactorer.BatchRenameClassUsage(directory, oldClass, newClass, recursive);
+        return JsonSerializer.Serialize(result, _jsonOptions);
+    }
 }
