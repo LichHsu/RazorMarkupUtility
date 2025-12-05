@@ -23,7 +23,58 @@ public static class TestRunner
         try { TestWrapElement(); passed++; Console.WriteLine("✓ TestWrapElement Passed"); }
         catch (Exception ex) { failed++; Console.WriteLine($"✗ TestWrapElement Failed: {ex.Message}"); }
 
+        try { TestRazorSplitting(); passed++; Console.WriteLine("✓ TestRazorSplitting Passed"); }
+        catch (Exception ex) { failed++; Console.WriteLine($"✗ TestRazorSplitting Failed: {ex.Message}"); }
+
         Console.WriteLine($"=== Tests Completed: {passed} Passed, {failed} Failed ===");
+    }
+
+    private static void TestRazorSplitting()
+    {
+        string razorContent = @"
+@page ""/""
+@namespace MyApp.Pages
+
+<h1>Hello</h1>
+
+@code {
+    private int count = 0;
+    private void Increment() { count++; }
+}
+
+<style>
+    h1 { color: red; }
+</style>
+";
+        // Test RazorParser directly
+        string? codeBlock = RazorParser.ExtractCodeBlock(razorContent);
+        Assert(codeBlock != null && codeBlock.Contains("private int count = 0;"), "Should extract code block");
+
+        string? styleBlock = RazorParser.ExtractStyleBlock(razorContent);
+        Assert(styleBlock != null && styleBlock.Contains("color: red;"), "Should extract style block");
+
+        string cleanContent = RazorParser.RemoveBlocks(razorContent);
+        Assert(!cleanContent.Contains("@code"), "Should remove @code");
+        Assert(!cleanContent.Contains("<style>"), "Should remove <style>");
+        Assert(cleanContent.Contains("<h1>Hello</h1>"), "Should keep HTML");
+
+        // Test RazorSplitter (Integration Test)
+        string testDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestRazor");
+        Directory.CreateDirectory(testDir);
+        string testFile = Path.Combine(testDir, "TestComp.razor");
+        File.WriteAllText(testFile, razorContent);
+
+        RazorMarkupUtility.Operations.RazorSplitter.SplitFile(testFile);
+
+        Assert(File.Exists(Path.Combine(testDir, "TestComp.razor.cs")), "Should create .cs file");
+        Assert(File.Exists(Path.Combine(testDir, "TestComp.razor.css")), "Should create .css file");
+        
+        string csContent = File.ReadAllText(Path.Combine(testDir, "TestComp.razor.cs"));
+        Assert(csContent.Contains("partial class TestComp"), "CS file should contain partial class");
+        Assert(csContent.Contains("namespace MyApp.Pages"), "CS file should use correct namespace");
+
+        // Cleanup
+        Directory.Delete(testDir, true);
     }
 
     private static void TestBasicParsing()

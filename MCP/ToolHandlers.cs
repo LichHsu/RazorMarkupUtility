@@ -76,4 +76,10 @@ public static class ToolHandlers
 
         return "Element wrapped successfully.";
     }
+
+    public static string HandleSplitRazorFile(JsonElement args)
+    {
+        string path = args.GetProperty("path").GetString()!;
+        return RazorMarkupUtility.Operations.RazorSplitter.SplitFile(path);
+    }
 }

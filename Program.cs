@@ -157,6 +157,20 @@ internal class Program
                     },
                     required = new[] { "path", "xpath", "wrapperTag" }
                 }
+            },
+            new
+            {
+                name = "split_razor_file",
+                description = "Splits a .razor file into .razor, .razor.cs, and .razor.css.",
+                inputSchema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        path = new { type = "string", description = "Path to the .razor file" }
+                    },
+                    required = new[] { "path" }
+                }
             }
         ];
     }
@@ -172,6 +186,7 @@ internal class Program
             "query_razor_elements" => ToolHandlers.HandleQueryRazorElements(args),
             "update_razor_element" => ToolHandlers.HandleUpdateRazorElement(args),
             "wrap_razor_element" => ToolHandlers.HandleWrapRazorElement(args),
+            "split_razor_file" => ToolHandlers.HandleSplitRazorFile(args),
             _ => throw new Exception($"Unknown tool: {name}")
         };
 
