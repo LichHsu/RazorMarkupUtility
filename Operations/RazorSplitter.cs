@@ -1,4 +1,5 @@
 using RazorMarkupUtility.Core;
+using System.Text;
 
 namespace RazorMarkupUtility.Operations;
 
@@ -60,5 +61,37 @@ namespace {namespaceName}
         File.WriteAllText(razorPath, newRazorContent);
 
         return $"Successfully split {fileNameWithoutExt}.razor";
+    }
+
+    public static string BatchSplit(IEnumerable<string> paths)
+    {
+        var sb = new StringBuilder();
+        int successCount = 0;
+        int failCount = 0;
+
+        foreach (var path in paths)
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    SplitFile(path);
+                    sb.AppendLine($"[OK] {Path.GetFileName(path)}");
+                    successCount++;
+                }
+                else
+                {
+                    sb.AppendLine($"[SKIP] {Path.GetFileName(path)} (Not Found)");
+                }
+            }
+            catch (Exception ex)
+            {
+                sb.AppendLine($"[ERROR] {Path.GetFileName(path)}: {ex.Message}");
+                failCount++;
+            }
+        }
+
+        sb.Insert(0, $"Batch Split Complete. Success: {successCount}, Failed: {failCount}\n");
+        return sb.ToString();
     }
 }

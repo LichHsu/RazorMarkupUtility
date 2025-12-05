@@ -1,6 +1,7 @@
 using System.Text.Json;
 using RazorMarkupUtility.Core;
 using RazorMarkupUtility.Models;
+using RazorMarkupUtility.Operations;
 
 namespace RazorMarkupUtility.MCP;
 
@@ -80,6 +81,38 @@ public static class ToolHandlers
     public static string HandleSplitRazorFile(JsonElement args)
     {
         string path = args.GetProperty("path").GetString()!;
-        return RazorMarkupUtility.Operations.RazorSplitter.SplitFile(path);
+        return RazorSplitter.SplitFile(path);
+    }
+
+    public static string HandleSplitRazorBatch(JsonElement args)
+    {
+        var paths = new List<string>();
+
+        if (args.TryGetProperty("paths", out var p))
+        {
+            foreach (var item in p.EnumerateArray())
+            {
+                var val = item.GetString();
+                if (val != null) paths.Add(val);
+            }
+        }
+
+        if (args.TryGetProperty("directory", out var d))
+        {
+            string? dir = d.GetString();
+            if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir))
+            {
+                bool recursive = args.TryGetProperty("recursive", out var r) && r.GetBoolean();
+                var searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+                paths.AddRange(Directory.GetFiles(dir, "*.razor", searchOption));
+            }
+        }
+
+        if (paths.Count == 0)
+        {
+            throw new ArgumentException("Must provide 'paths' or 'directory' containing .razor files.");
+        }
+
+        return RazorSplitter.BatchSplit(paths.Distinct());
     }
 }

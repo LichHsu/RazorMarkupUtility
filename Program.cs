@@ -171,6 +171,21 @@ internal class Program
                     },
                     required = new[] { "path" }
                 }
+            },
+            new
+            {
+                name = "split_razor_batch",
+                description = "Splits multiple .razor files in batch.",
+                inputSchema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        paths = new { type = "array", items = new { type = "string" }, description = "List of file paths" },
+                        directory = new { type = "string", description = "Directory to search for .razor files" },
+                        recursive = new { type = "boolean", description = "Whether to search recursively (default false)" }
+                    }
+                }
             }
         ];
     }
@@ -187,6 +202,7 @@ internal class Program
             "update_razor_element" => ToolHandlers.HandleUpdateRazorElement(args),
             "wrap_razor_element" => ToolHandlers.HandleWrapRazorElement(args),
             "split_razor_file" => ToolHandlers.HandleSplitRazorFile(args),
+            "split_razor_batch" => ToolHandlers.HandleSplitRazorBatch(args),
             _ => throw new Exception($"Unknown tool: {name}")
         };
 
