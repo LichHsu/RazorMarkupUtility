@@ -1,0 +1,194 @@
+﻿using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using RazorMarkupUtility.MCP;
+
+namespace RazorMarkupUtility;
+
+internal class Program
+{
+    private static readonly string _logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mcp_debug_log.txt");
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        WriteIndented = false,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
+    static async Task Main(string[] args)
+    {
+        Console.OutputEncoding = new UTF8Encoding(false);
+        Console.InputEncoding = new UTF8Encoding(false);
+
+        if (args.Length > 0 && args[0] == "--test")
+        {
+            RazorMarkupUtility.Testing.TestRunner.RunAllTests();
+            return;
+        }
+
+        Log("=== Razor Markup Server Started ===");
+
+        try
+        {
+            while (true)
+            {
+                string? line = await Console.In.ReadLineAsync();
+                if (line == null) break;
+                if (string.IsNullOrWhiteSpace(line)) continue;
+
+                Log($"[RECV]: {line}");
+
+                var request = JsonSerializer.Deserialize<JsonRpcRequest>(line, _jsonOptions);
+                if (request == null) continue;
+
+                object? result = null;
+
+                switch (request.Method)
+                {
+                    case "initialize":
+                        result = new
+                        {
+                            protocolVersion = "2024-11-05",
+                            capabilities = new { tools = new { } },
+                            serverInfo = new { name = "razor-markup-utility", version = "1.0.0" }
+                        };
+                        break;
+
+                    case "notifications/initialized":
+                        continue;
+
+                    case "tools/list":
+                        result = new { tools = GetToolDefinitions() };
+                        break;
+
+                    case "tools/call":
+                        try
+                        {
+                            result = HandleToolCall(request.Params);
+                        }
+                        catch (Exception ex)
+                        {
+                            Log($"[ERROR]: {ex.Message}");
+                            SendResponse(new JsonRpcResponse
+                            {
+                                Id = request.Id,
+                                Error = new { code = -32602, message = ex.Message }
+                            });
+                            continue;
+                        }
+                        break;
+                }
+
+                if (result != null)
+                {
+                    SendResponse(new JsonRpcResponse { Id = request.Id, Result = result });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log($"[FATAL]: {ex}");
+        }
+    }
+
+    private static object[] GetToolDefinitions()
+    {
+        return
+        [
+            new
+            {
+                name = "get_razor_dom",
+                description = "Parses Razor/HTML content and returns a simplified DOM tree.",
+                inputSchema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        path = new { type = "string" }
+                    },
+                    required = new[] { "path" }
+                }
+            },
+            new
+            {
+                name = "query_razor_elements",
+                description = "Queries elements using XPath.",
+                inputSchema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        path = new { type = "string" },
+                        xpath = new { type = "string" }
+                    },
+                    required = new[] { "path", "xpath" }
+                }
+            },
+            new
+            {
+                name = "update_razor_element",
+                description = "Updates an element's inner HTML or attributes.",
+                inputSchema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        path = new { type = "string" },
+                        xpath = new { type = "string" },
+                        newInnerHtml = new { type = "string", description = "Optional new inner HTML" },
+                        attributes = new { type = "object", description = "Optional dictionary of attributes to update" }
+                    },
+                    required = new[] { "path", "xpath" }
+                }
+            },
+            new
+            {
+                name = "wrap_razor_element",
+                description = "Wraps an element with a new parent tag.",
+                inputSchema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        path = new { type = "string" },
+                        xpath = new { type = "string" },
+                        wrapperTag = new { type = "string" },
+                        attributes = new { type = "object" }
+                    },
+                    required = new[] { "path", "xpath", "wrapperTag" }
+                }
+            }
+        ];
+    }
+
+    private static object HandleToolCall(JsonElement paramsEl)
+    {
+        string name = paramsEl.GetProperty("name").GetString() ?? "";
+        JsonElement args = paramsEl.GetProperty("arguments");
+
+        string resultText = name switch
+        {
+            "get_razor_dom" => ToolHandlers.HandleGetRazorDom(args),
+            "query_razor_elements" => ToolHandlers.HandleQueryRazorElements(args),
+            "update_razor_element" => ToolHandlers.HandleUpdateRazorElement(args),
+            "wrap_razor_element" => ToolHandlers.HandleWrapRazorElement(args),
+            _ => throw new Exception($"Unknown tool: {name}")
+        };
+
+        return new { content = new[] { new { type = "text", text = resultText } } };
+    }
+
+    private static void SendResponse(JsonRpcResponse response)
+    {
+        string json = JsonSerializer.Serialize(response, _jsonOptions);
+        Log($"[SEND]: {json}");
+        Console.Write(json + "\n");
+        Console.Out.Flush();
+    }
+
+    private static void Log(string message)
+    {
+        try { File.AppendAllText(_logPath, $"[{DateTime.Now:HH:mm:ss}] {message}{Environment.NewLine}"); }
+        catch { }
+    }
+}
