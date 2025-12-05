@@ -54,9 +54,37 @@ dotnet run
 ### 4. `wrap_razor_element`
 包裹元素。
 *   **參數**:
-    *   `path`, `xpath`
     *   `wrapperTag` (e.g. "div")
     *   `attributes` (optional)
+
+### 5. `split_razor_batch`
+批次拆分 Razor 檔案 (HTML/C#/CSS)。
+*   **參數**:
+    *   `directory`
+    *   `recursive` (default: false)
+
+### 6. `batch_rename_class_usage`
+批次重新命名 CSS Class 使用 (跨檔案)。
+*   **參數**:
+    *   `directory`
+    *   `oldClass`
+    *   `newClass`
+    *   `recursive` (default: true)
+
+## 💻 CLI 命令列模式 (CLI Mode)
+
+本工具支援直接透過命令列執行批次任務：
+
+### 1. 批次拆分 Razor 檔案
+```bash
+dotnet run -- split-batch --path "d:\project\components" [--recursive]
+```
+
+### 2. 批次重新命名 Class
+```bash
+dotnet run -- rename-class --path "d:\project" --old "btn-primary" --new "btn-main" [--recursive]
+```
+
 
 ## 使用範例
 
