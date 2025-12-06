@@ -1,4 +1,5 @@
 using HtmlAgilityPack;
+using System.Text.RegularExpressions;
 
 namespace RazorMarkupUtility.Core;
 
@@ -30,6 +31,23 @@ public static class RazorAnalyzer
             }
         }
 
+        // V2.3 Enhance: Scan for C# string literals that might be CSS classes (e.g. in @code blocks or ternary ops)
+        // Pattern: "words-with-dashes" or "tailwind:patterns"
+        // Avoid aggressive matching of standard code
+        var stringMatches = Regex.Matches(content, @"\""([a-zA-Z0-9\-_: ]+)\""");
+        foreach (Match match in stringMatches)
+        {
+            var value = match.Groups[1].Value;
+            var classes = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var cls in classes)
+            {
+                if (IsValidCssClass(cls))
+                {
+                    usedClasses.Add(cls.Trim());
+                }
+            }
+        }
+
         return usedClasses.OrderBy(c => c).ToList();
     }
 
@@ -40,6 +58,8 @@ public static class RazorAnalyzer
 
         // Exclude Razor syntax and Logic
         if (cls.StartsWith("@")) return false;
+        if (cls.StartsWith("_")) return false; // Private fields
+        if (char.IsDigit(cls[0])) return false; // CSS classes cannot start with digit (unless escaped, but unlikely in raw usage)
         if (cls.StartsWith("(") || cls.EndsWith(")")) return false;
         if (cls.Contains("?") || cls.Contains(":") && !cls.Contains("-")) return false; // : is valid in Tailwind (hover:bg-red), but ternary ? : usually has spaces, but split might isolate them.
         // Wait, "hover:bg-red" is valid. "active" : "inactive" might be split into ["active\"", ":", "\"inactive\""]
