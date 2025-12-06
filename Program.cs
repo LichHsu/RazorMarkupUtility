@@ -2,7 +2,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using RazorMarkupUtility.MCP;
+using RazorMarkupUtility.Operations;
 using Lichs.MCP.Core;
+using Lichs.MCP.Core.Attributes;
 
 namespace RazorMarkupUtility;
 
@@ -11,6 +13,13 @@ internal class Program
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
         WriteIndented = false,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+    
+    private static readonly JsonSerializerOptions _jsonPrettyOptions = new()
+    {
+        WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
@@ -31,6 +40,11 @@ internal class Program
             if (args[0] == "split-batch")
             {
                 // Usage: split-batch <directory> [recursive]
+                if (args.Length < 2)
+                {
+                    Console.WriteLine("Usage: split-batch <directory> [recursive]");
+                    return;
+                }
                 string directory = args[1];
                 bool recursive = args.Length > 2 && bool.Parse(args[2]);
                 
@@ -48,7 +62,7 @@ internal class Program
                 bool recursive = args.Length <= 4 || bool.Parse(args[4]);
 
                 var result = RazorMarkupUtility.Operations.RazorRefactorer.BatchRenameClassUsage(directory, oldClass, newClass, recursive);
-                Console.WriteLine(JsonSerializer.Serialize(result, _jsonOptions));
+                Console.WriteLine(JsonSerializer.Serialize(result, _jsonPrettyOptions));
                 return;
             }
         }
@@ -60,4 +74,24 @@ internal class Program
         
         await server.RunAsync(args);
     }
+
+    // --- New Tools Wrappers ---
+
+    [McpTool("analyze_tag_helpers", "分析 Razor 檔案中的 TagHelper 與元件使用情況 (識別 <MyComponent> 或 asp-* 屬性)。")]
+    public static string AnalyzeTagHelpers([McpParameter("Razor 檔案路徑")] string path)
+    {
+        var usages = TagHelperAnalyzer.AnalyzeTagHelpers(path);
+        return JsonSerializer.Serialize(usages, _jsonPrettyOptions);
+    }
+
+    [McpTool("get_razor_dependencies", "建立 Razor 專案的依賴關係圖 (Views, Layouts, Partials)。")]
+    public static string GetRazorDependencies([McpParameter("專案根目錄")] string rootPath)
+    {
+        var graph = RazorDependencyAnalyzer.BuildDependencyGraph(rootPath);
+        return JsonSerializer.Serialize(graph, _jsonPrettyOptions);
+    }
+
+    // --- Existing Tools Wrappers if not in ToolHandlers ---
+    // Note: Previous migration put existing tools in ToolHandlers.cs with [McpTool]
+    // So we don't need to re-implement valid ones here.
 }
