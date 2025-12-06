@@ -21,13 +21,34 @@ public static class RazorAnalyzer
                     var classes = classAttr.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                     foreach (var cls in classes)
                     {
-                        usedClasses.Add(cls.Trim());
+                        if (IsValidCssClass(cls))
+                        {
+                            usedClasses.Add(cls.Trim());
+                        }
                     }
                 }
             }
         }
 
         return usedClasses.OrderBy(c => c).ToList();
+    }
+
+    private static bool IsValidCssClass(string cls)
+    {
+        cls = cls.Trim();
+        if (string.IsNullOrEmpty(cls)) return false;
+
+        // Exclude Razor syntax and Logic
+        if (cls.StartsWith("@")) return false;
+        if (cls.StartsWith("(") || cls.EndsWith(")")) return false;
+        if (cls.Contains("?") || cls.Contains(":") && !cls.Contains("-")) return false; // : is valid in Tailwind (hover:bg-red), but ternary ? : usually has spaces, but split might isolate them.
+        // Wait, "hover:bg-red" is valid. "active" : "inactive" might be split into ["active\"", ":", "\"inactive\""]
+        if (cls.Contains("\"") || cls.Contains("'")) return false;
+        
+        // Exclude common operators if split logic kept them
+        if (cls == "&&" || cls == "||" || cls == "!" || cls == "+" || cls == "==" || cls == "!=") return false;
+        
+        return true;
     }
 
     public static List<string> GetUsedClassesFromDirectory(string directory, bool recursive = true)
