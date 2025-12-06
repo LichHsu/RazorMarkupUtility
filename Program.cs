@@ -11,13 +11,6 @@ namespace RazorMarkupUtility;
 
 internal class Program
 {
-    private static readonly JsonSerializerOptions _jsonOptions = new()
-    {
-        WriteIndented = false,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-    };
-    
     private static readonly JsonSerializerOptions _jsonPrettyOptions = new()
     {
         WriteIndented = true,
@@ -36,24 +29,19 @@ internal class Program
             return;
         }
 
-        var server = new McpServer("razor-markup-utility", "2.1.0");
+        var server = new McpServer("razor-markup-utility", "2.2.0");
         server.RegisterToolsFromAssembly(System.Reflection.Assembly.GetExecutingAssembly());
         await server.RunAsync(args);
     }
-
-    // =========================================================================================
-    // Core Tools (Consolidated)
-    // =========================================================================================
 
     [McpTool("analyze_razor", "分析 Razor 專案結構、依賴關係、與代碼使用狀況。")]
     public static string AnalyzeRazor(
         [McpParameter("分析目標路徑")] string path,
         [McpParameter("分析類型 (TagHelpers, Dependencies, ImplicitDeps, UsedClasses, Orphans, Validation, Patterns)")] string analysisType,
-        [McpParameter("選用參數 (JSON)", false)] string optionsJson = "{}")
+        [McpParameter("選用參數", false)] RazorAnalysisOptions? options = null)
     {
-        var options = JsonSerializer.Deserialize<JsonElement>(optionsJson);
-        bool recursive = true;
-        if (options.TryGetProperty("recursive", out var r)) recursive = r.GetBoolean();
+        options ??= new RazorAnalysisOptions();
+        bool recursive = options.Recursive;
 
         if (analysisType.Equals("TagHelpers", StringComparison.OrdinalIgnoreCase))
         {
@@ -86,6 +74,7 @@ internal class Program
         }
         else if (analysisType.Equals("Patterns", StringComparison.OrdinalIgnoreCase))
         {
+             // Patterns might also need Recursive option if path is directory, but logic is naive for now
             return JsonSerializer.Serialize(RazorPatternAnalyzer.AnalyzePatterns(path), _jsonPrettyOptions);
         }
 
@@ -109,15 +98,13 @@ internal class Program
     [McpTool("edit_razor_dom", "批次修改 Razor DOM 結構。")]
     public static string EditRazorDom(
         [McpParameter("Razor 檔案路徑")] string path,
-        [McpParameter("操作列表 (JSON Array of ops)")] string operationsJson)
+        [McpParameter("操作列表")] List<RazorEditOperation> operations)
     {
         if (!File.Exists(path)) throw new FileNotFoundException("File not found", path);
+        if (operations == null || operations.Count == 0) return "No operations provided.";
+
         string fileContent = File.ReadAllText(path);
         
-        var operations = JsonSerializer.Deserialize<List<RazorOperation>>(operationsJson, _jsonOptions);
-        if (operations == null) return "No operations provided.";
-
-        // In-memory sequential processing
         foreach (var op in operations)
         {
             if (op.Type.Equals("Update", StringComparison.OrdinalIgnoreCase))
@@ -138,13 +125,13 @@ internal class Program
         return $"成功執行 {operations.Count} 個 DOM 操作於 {path}";
     }
 
-    [McpTool("refactor_razor", "執行進階重構 (Split, BatchRenameClass)。")]
+    [McpTool("refactor_razor", "執行進階重構。")]
     public static string RefactorRazor(
         [McpParameter("目標路徑 (檔案或目錄)")] string path,
         [McpParameter("重構類型 (Split, BatchRenameClass)")] string refactoringType,
-        [McpParameter("選項參數 (JSON)", false)] string optionsJson = "{}")
+        [McpParameter("選項參數", false)] RazorRefactorOptions? options = null)
     {
-        var options = JsonSerializer.Deserialize<JsonElement>(optionsJson);
+        options ??= new RazorRefactorOptions();
 
         if (refactoringType.Equals("Split", StringComparison.OrdinalIgnoreCase))
         {
@@ -158,29 +145,13 @@ internal class Program
         }
         else if (refactoringType.Equals("BatchRenameClass", StringComparison.OrdinalIgnoreCase))
         {
-            string oldClass = "";
-            string newClass = "";
-            bool recursive = true;
+            if (string.IsNullOrEmpty(options.OldClass) || string.IsNullOrEmpty(options.NewClass))
+                throw new ArgumentException("BatchRenameClass 需要 OldClass 與 NewClass 參數");
 
-            if (options.TryGetProperty("oldClass", out var oc)) oldClass = oc.GetString() ?? "";
-            if (options.TryGetProperty("newClass", out var nc)) newClass = nc.GetString() ?? "";
-            if (options.TryGetProperty("recursive", out var r)) recursive = r.GetBoolean();
-
-            if (string.IsNullOrEmpty(oldClass) || string.IsNullOrEmpty(newClass))
-                throw new ArgumentException("BatchRenameClass 需要 oldClass 與 newClass 參數");
-
-            var result = RazorRefactorer.BatchRenameClassUsage(path, oldClass, newClass, recursive);
+            var result = RazorRefactorer.BatchRenameClassUsage(path, options.OldClass, options.NewClass, options.Recursive);
             return JsonSerializer.Serialize(result, _jsonPrettyOptions);
         }
 
         throw new ArgumentException($"未知的重構類型: {refactoringType}");
     }
-}
-
-public class RazorOperation
-{
-    public string Type { get; set; } = ""; // Update, Wrap, Append
-    public string Xpath { get; set; } = "";
-    public string Content { get; set; } = "";
-    public Dictionary<string, string>? Attributes { get; set; }
 }
