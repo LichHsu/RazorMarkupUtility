@@ -30,8 +30,8 @@ public static class RazorOrphanScanner
 
             foreach (var cls in classes)
             {
-                // Filter out Razor expressions (starting with @) and typically dynamic bindings
-                if (!cls.StartsWith("@") && !string.IsNullOrWhiteSpace(cls))
+                // Filter out Razor expressions and invalid class names
+                if (!string.IsNullOrWhiteSpace(cls) && IsValidClassName(cls))
                 {
                     usedClasses.Add(cls);
                 }
@@ -40,11 +40,6 @@ public static class RazorOrphanScanner
 
         // 2. Extract defined classes from Scoped CSS (if exists)
         var cssPath = razorPath + ".css"; // Standard Blazor scoped CSS convention
-        // Also check for {File}.razor.css convention if {File}.css isn't found, though usually .razor.css IS the convention for .razor files.
-        // Usually: MyComponent.razor -> MyComponent.razor.css
-
-        // NOTE: The user prompt context implies checking ".razor.css".
-        // If razorPath is "Component.razor", cssPath currently is "Component.razor.css", which is correct.
         
         var definedClasses = new HashSet<string>();
 
@@ -61,5 +56,26 @@ public static class RazorOrphanScanner
         usedClasses.ExceptWith(definedClasses);
 
         return usedClasses.OrderBy(c => c).ToList();
+    }
+
+    private static bool IsValidClassName(string cls)
+    {
+        // 1. Must not start with @ (Razor explicit expression)
+        if (cls.StartsWith("@")) return false;
+
+        // 2. Must not contain non-CSS characters often found in leaked code
+        // (e.g. operators ?, |, =, !, (, ), ,, +, *, ;)
+        // Valid Tailwind chars include: a-z, A-Z, 0-9, -, _, :, /, [, ], ., %
+        if (cls.Any(c => c == '?' || c == '|' || c == '=' || c == '!' || c == '(' || c == ')' || 
+                         c == ',' || c == '+' || c == '*' || c == ';' || c == '<' || c == '>' ||
+                         c == '\'' || c == '"' || c == '&' || c == '{' || c == '}'))
+        {
+            return false;
+        }
+
+        // 3. Filter out pure numbers (e.g. arguments "1", "0") often leaked from function calls
+        if (int.TryParse(cls, out _)) return false;
+
+        return true;
     }
 }

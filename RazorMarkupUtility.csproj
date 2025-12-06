@@ -11,4 +11,8 @@
     <PackageReference Include="HtmlAgilityPack" Version="1.12.4" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Lichs.MCP.Core\Lichs.MCP.Core.csproj" />
+  </ItemGroup>
+
 </Project>
