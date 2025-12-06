@@ -154,4 +154,24 @@ internal class Program
 
         throw new ArgumentException($"未知的重構類型: {refactoringType}");
     }
+
+    [McpTool("merge_razor", "將設計檔 (Design) 的樣式合併回邏輯檔 (Logic)")]
+    public static string MergeRazor(
+        [McpParameter("邏輯 Razor 檔案路徑")] string logicPath,
+        [McpParameter("設計 HTML 檔案路徑")] string designPath,
+        [McpParameter("合併選項", false)] RazorMergeOptions? options = null)
+    {
+        options ??= new RazorMergeOptions();
+        string newContent = RazorMerger.MergeStyles(logicPath, designPath, options);
+        
+        // Write back to Logic Path? Or create a new file?
+        // Usually merging implies updating the logic file.
+        // Let's backup first just in case.
+        string backupPath = logicPath + ".bak";
+        File.Copy(logicPath, backupPath, true);
+        
+        File.WriteAllText(logicPath, newContent);
+
+        return $"合併成功！已將樣式從 {Path.GetFileName(designPath)} 套用到 {Path.GetFileName(logicPath)}。備份已建立於 {Path.GetFileName(backupPath)}。";
+    }
 }

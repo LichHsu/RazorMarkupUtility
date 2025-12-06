@@ -46,6 +46,15 @@ Performs high-level refactoring operations.
         *   `newClass`: Target class name (for Rename).
         *   `recursive`: Boolean.
 
+### 5. `merge_razor`
+Merges Design HTML styles back into Logic Razor components using `data-mcp-id`.
+*   **Parameters**:
+    *   `logicPath` (string): Path to original Razor file (The Skeleton).
+    *   `designPath` (string): Path to new HTML file (The Skin).
+    *   `options`: (Object)
+        *   `idAttribute`: Custom ID attribute (default: `data-mcp-id`).
+        *   `attributesToMerge`: List of attributes to copy (default: `["class", "style"]`).
+
 ## Development
 Run `dotnet build` to compile.
 Run `RazorMarkupUtility.exe --test` to execute internal unit tests.
