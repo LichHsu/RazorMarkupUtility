@@ -1,5 +1,4 @@
 using RazorMarkupUtility.Core;
-using RazorMarkupUtility.Models;
 
 namespace RazorMarkupUtility.Testing;
 
@@ -84,7 +83,7 @@ public static class TestRunner
 
         Assert(File.Exists(Path.Combine(testDir, "TestComp.razor.cs")), "Should create .cs file");
         Assert(File.Exists(Path.Combine(testDir, "TestComp.razor.css")), "Should create .css file");
-        
+
         string csContent = File.ReadAllText(Path.Combine(testDir, "TestComp.razor.cs"));
         Assert(csContent.Contains("partial class TestComp"), "CS file should contain partial class");
         Assert(csContent.Contains("namespace MyApp.Pages"), "CS file should use correct namespace");
@@ -117,10 +116,10 @@ public static class TestRunner
 </div>";
 
         var structure = RazorDomParser.GetStructure(razor);
-        
+
         // HtmlAgilityPack usually treats @if as text nodes or ignores them if they are not tags.
         // The span and button should still be parsed correctly if they are recognized as tags.
-        
+
         // Let's check if we can find the button
         var elements = RazorDomParser.QueryElements(razor, "//button");
         Assert(elements.Count == 1, "Should find button");
@@ -148,7 +147,7 @@ public static class TestRunner
     {
         string html = "<div class='a b'> <span class=' c  d '></span> </div>";
         var classes = RazorAnalyzer.GetUsedClasses(html);
-        
+
         Assert(classes.Contains("a"), "Should contain 'a'");
         Assert(classes.Contains("b"), "Should contain 'b'");
         Assert(classes.Contains("c"), "Should contain 'c'");

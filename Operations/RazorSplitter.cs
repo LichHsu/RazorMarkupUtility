@@ -21,10 +21,10 @@ public static class RazorSplitter
         if (!string.IsNullOrWhiteSpace(codeBlock))
         {
             string csPath = Path.Combine(directory, $"{fileNameWithoutExt}.razor.cs");
-            
+
             // Try to find namespace
             string namespaceName = "MyApp.Components"; // Default
-            
+
             // Infer namespace from file content if possible
             // Simple check for @namespace
             var namespaceMatch = System.Text.RegularExpressions.Regex.Match(content, @"@namespace\s+([\w\.]+)");
@@ -108,7 +108,7 @@ namespace {namespaceName}
 
         if (content.TrimStart().StartsWith("["))
         {
-            try 
+            try
             {
                 paths = System.Text.Json.JsonSerializer.Deserialize<string[]>(content) ?? Array.Empty<string>();
             }

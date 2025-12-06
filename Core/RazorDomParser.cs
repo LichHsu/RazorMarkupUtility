@@ -12,7 +12,7 @@ public static class RazorDomParser
         doc.OptionWriteEmptyNodes = true;
         doc.OptionAutoCloseOnEnd = false; // Important for Razor mixed content
         doc.OptionCheckSyntax = false;
-        
+
         doc.LoadHtml(content);
         return doc;
     }
@@ -65,7 +65,7 @@ public static class RazorDomParser
     {
         var doc = Load(content);
         var nodes = doc.DocumentNode.SelectNodes(xpath);
-        
+
         if (nodes == null) return new List<RazorElement>();
 
         return nodes.Select(ConvertNode).ToList();

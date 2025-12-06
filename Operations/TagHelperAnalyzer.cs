@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using HtmlAgilityPack;
 
 namespace RazorMarkupUtility.Operations;
@@ -34,7 +33,7 @@ public static class TagHelperAnalyzer
             if (node.NodeType != HtmlNodeType.Element) continue;
 
             bool isComponent = IsPotentialComponent(node.Name);
-            bool hasTagHelperAttributes = node.Attributes.Any(a => a.Name.StartsWith("asp-") || a.Name.Contains(".")); 
+            bool hasTagHelperAttributes = node.Attributes.Any(a => a.Name.StartsWith("asp-") || a.Name.Contains("."));
             // blazor attributes often contain dots or are distinct
 
             if (isComponent || hasTagHelperAttributes)
@@ -61,7 +60,7 @@ public static class TagHelperAnalyzer
         // HtmlAgilityPack converts standard tags to lowercase. If it preserves case, we can check.
         // Actually HAP lowercases everything by default unless configured otherwise.
         // However, Blazor components are often used in PascalCase in source.
-        
+
         // 為了更準確，我們假設非標準 HTML 標籤即為 Component
         return !_standardHtmlTags.Contains(tagName.ToLower());
     }

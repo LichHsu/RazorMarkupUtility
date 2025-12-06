@@ -1,5 +1,4 @@
 using HtmlAgilityPack;
-using RazorMarkupUtility.Models;
 
 namespace RazorMarkupUtility.Core;
 
@@ -47,10 +46,10 @@ public static class RazorDomModifier
 
         // Clone node to preserve it
         var clonedNode = node.Clone();
-        
+
         // Replace original node with wrapper
         node.ParentNode.ReplaceChild(wrapper, node);
-        
+
         // Add cloned node to wrapper
         wrapper.AppendChild(clonedNode);
 

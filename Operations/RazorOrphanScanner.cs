@@ -40,7 +40,7 @@ public static class RazorOrphanScanner
 
         // 2. Extract defined classes from Scoped CSS (if exists)
         var cssPath = razorPath + ".css"; // Standard Blazor scoped CSS convention
-        
+
         var definedClasses = new HashSet<string>();
 
         if (File.Exists(cssPath))
@@ -66,7 +66,7 @@ public static class RazorOrphanScanner
         // 2. Must not contain non-CSS characters often found in leaked code
         // (e.g. operators ?, |, =, !, (, ), ,, +, *, ;)
         // Valid Tailwind chars include: a-z, A-Z, 0-9, -, _, :, /, [, ], ., %
-        if (cls.Any(c => c == '?' || c == '|' || c == '=' || c == '!' || c == '(' || c == ')' || 
+        if (cls.Any(c => c == '?' || c == '|' || c == '=' || c == '!' || c == '(' || c == ')' ||
                          c == ',' || c == '+' || c == '*' || c == ';' || c == '<' || c == '>' ||
                          c == '\'' || c == '"' || c == '&' || c == '{' || c == '}'))
         {

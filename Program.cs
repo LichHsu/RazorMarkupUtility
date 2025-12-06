@@ -1,11 +1,11 @@
-﻿using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+﻿using Lichs.MCP.Core;
+using Lichs.MCP.Core.Attributes;
 using RazorMarkupUtility.Core;
 using RazorMarkupUtility.Models;
 using RazorMarkupUtility.Operations;
-using Lichs.MCP.Core;
-using Lichs.MCP.Core.Attributes;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace RazorMarkupUtility;
 
@@ -58,11 +58,11 @@ internal class Program
         }
         else if (analysisType.Equals("UsedClasses", StringComparison.OrdinalIgnoreCase))
         {
-             if (Directory.Exists(path))
-                 return JsonSerializer.Serialize(RazorAnalyzer.GetUsedClassesFromDirectory(path, recursive), _jsonPrettyOptions);
-             if (File.Exists(path))
-                 return JsonSerializer.Serialize(RazorAnalyzer.GetUsedClasses(File.ReadAllText(path)), _jsonPrettyOptions);
-             throw new FileNotFoundException("Path not found", path);
+            if (Directory.Exists(path))
+                return JsonSerializer.Serialize(RazorAnalyzer.GetUsedClassesFromDirectory(path, recursive), _jsonPrettyOptions);
+            if (File.Exists(path))
+                return JsonSerializer.Serialize(RazorAnalyzer.GetUsedClasses(File.ReadAllText(path)), _jsonPrettyOptions);
+            throw new FileNotFoundException("Path not found", path);
         }
         else if (analysisType.Equals("Orphans", StringComparison.OrdinalIgnoreCase))
         {
@@ -74,7 +74,7 @@ internal class Program
         }
         else if (analysisType.Equals("Patterns", StringComparison.OrdinalIgnoreCase))
         {
-             // Patterns might also need Recursive option if path is directory, but logic is naive for now
+            // Patterns might also need Recursive option if path is directory, but logic is naive for now
             return JsonSerializer.Serialize(RazorPatternAnalyzer.AnalyzePatterns(path), _jsonPrettyOptions);
         }
 
@@ -104,7 +104,7 @@ internal class Program
         if (operations == null || operations.Count == 0) return "No operations provided.";
 
         string fileContent = File.ReadAllText(path);
-        
+
         foreach (var op in operations)
         {
             if (op.Type.Equals("Update", StringComparison.OrdinalIgnoreCase))
@@ -138,10 +138,10 @@ internal class Program
             if (File.Exists(path)) return RazorSplitter.SplitFile(path);
             if (Directory.Exists(path))
             {
-                 var files = Directory.GetFiles(path, "*.razor", SearchOption.AllDirectories);
-                 return RazorSplitter.BatchSplit(files);
+                var files = Directory.GetFiles(path, "*.razor", SearchOption.AllDirectories);
+                return RazorSplitter.BatchSplit(files);
             }
-             throw new FileNotFoundException("Path not found", path);
+            throw new FileNotFoundException("Path not found", path);
         }
         else if (refactoringType.Equals("BatchRenameClass", StringComparison.OrdinalIgnoreCase))
         {
@@ -163,13 +163,13 @@ internal class Program
     {
         options ??= new RazorMergeOptions();
         string newContent = RazorMerger.MergeStyles(logicPath, designPath, options);
-        
+
         // Write back to Logic Path? Or create a new file?
         // Usually merging implies updating the logic file.
         // Let's backup first just in case.
         string backupPath = logicPath + ".bak";
         File.Copy(logicPath, backupPath, true);
-        
+
         File.WriteAllText(logicPath, newContent);
 
         return $"合併成功！已將樣式從 {Path.GetFileName(designPath)} 套用到 {Path.GetFileName(logicPath)}。備份已建立於 {Path.GetFileName(backupPath)}。";

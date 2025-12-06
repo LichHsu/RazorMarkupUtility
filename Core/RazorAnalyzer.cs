@@ -1,4 +1,3 @@
-using HtmlAgilityPack;
 using System.Text.RegularExpressions;
 
 namespace RazorMarkupUtility.Core;
@@ -9,7 +8,7 @@ public static class RazorAnalyzer
     {
         var doc = RazorDomParser.Load(content);
         var nodes = doc.DocumentNode.SelectNodes("//*[@class]");
-        
+
         var usedClasses = new HashSet<string>();
 
         if (nodes != null)
@@ -64,10 +63,10 @@ public static class RazorAnalyzer
         if (cls.Contains("?") || cls.Contains(":") && !cls.Contains("-")) return false; // : is valid in Tailwind (hover:bg-red), but ternary ? : usually has spaces, but split might isolate them.
         // Wait, "hover:bg-red" is valid. "active" : "inactive" might be split into ["active\"", ":", "\"inactive\""]
         if (cls.Contains("\"") || cls.Contains("'")) return false;
-        
+
         // Exclude common operators if split logic kept them
         if (cls == "&&" || cls == "||" || cls == "!" || cls == "+" || cls == "==" || cls == "!=") return false;
-        
+
         return true;
     }
 
@@ -75,7 +74,7 @@ public static class RazorAnalyzer
     {
         var allUsedClasses = new HashSet<string>();
         var searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-        
+
         if (!Directory.Exists(directory)) throw new DirectoryNotFoundException($"Directory not found: {directory}");
 
         var files = Directory.GetFiles(directory, "*.razor", searchOption)

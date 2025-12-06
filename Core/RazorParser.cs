@@ -1,4 +1,3 @@
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace RazorMarkupUtility.Core;
@@ -13,7 +12,7 @@ public static class RazorParser
     {
         // Simple regex might fail with nested braces, but for @code it usually starts at top level.
         // A robust parser would count braces. Let's try a brace counting approach.
-        
+
         int codeIndex = content.IndexOf("@code");
         if (codeIndex == -1) return null;
 

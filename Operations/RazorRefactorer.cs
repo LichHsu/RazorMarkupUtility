@@ -7,7 +7,7 @@ public static class RazorRefactorer
     public static BatchRenameResult BatchRenameClassUsage(string directory, string oldClass, string newClass, bool recursive = true)
     {
         var result = new BatchRenameResult();
-        
+
         if (!Directory.Exists(directory))
             throw new DirectoryNotFoundException($"Directory not found: {directory}");
 

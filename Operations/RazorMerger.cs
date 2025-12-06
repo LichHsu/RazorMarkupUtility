@@ -22,7 +22,7 @@ public static class RazorMerger
         // Known Issue: HtmlAgilityPack might mangle @code blocks if they are not inside valid HTML tags or generic text.
         // Mitigation: We parse logicContent, update it, but we need to be careful about preserving @code.
         // Actually, RazorDomParser.Load uses HtmlAgilityPack. 
-        
+
         logicDoc.LoadHtml(logicContent);
         var designDoc = new HtmlDocument();
         designDoc.LoadHtml(designContent);
@@ -33,7 +33,7 @@ public static class RazorMerger
         // Map Design Nodes by ID
         var designMap = new Dictionary<string, HtmlNode>();
         var designNodes = designDoc.DocumentNode.SelectNodes($"//*[@{idAttr}]");
-        
+
         if (designNodes != null)
         {
             foreach (var node in designNodes)
@@ -77,7 +77,7 @@ public static class RazorMerger
         // Ideally we should use a smarter replacer, but for V1 let's trust HAP's minimal interference on well-formed HTML.
         // If Logic Razor is pure markup + @code block, usually it's fine.
         // If it has complex inline C# blocks interleaved, HAP *might* decode symbols.
-        
+
         return logicDoc.DocumentNode.OuterHtml; // Returns the full merged content
     }
 }

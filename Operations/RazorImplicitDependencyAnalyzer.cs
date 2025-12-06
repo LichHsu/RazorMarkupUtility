@@ -33,7 +33,7 @@ public class RazorImplicitDependencyAnalyzer
             }
 
             _implicitDependencies[dir].Add(file);
-            
+
             // Check for explicit layout definition in _ViewStart
             if (Path.GetFileName(file).Equals("_ViewStart.cshtml", StringComparison.OrdinalIgnoreCase))
             {

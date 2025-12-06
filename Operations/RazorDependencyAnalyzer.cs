@@ -42,7 +42,7 @@ public static class RazorDependencyAnalyzer
             {
                 AddDependency(result, rootPath, node, layoutMatch.Groups[1].Value);
             }
-            
+
             var blazorLayoutMatch = Regex.Match(content, @"@layout\s+([a-zA-Z0-9_]+)");
             if (blazorLayoutMatch.Success)
             {
@@ -62,7 +62,7 @@ public static class RazorDependencyAnalyzer
             {
                 AddDependency(result, rootPath, node, match.Groups[1].Value);
             }
-            
+
             // 4. Component Usage (Optional - requires TagHelperAnalyzer, simplified here)
             // For now, we focus on explicit file-based dependencies usually found in MVC/Razor Pages
         }
@@ -75,10 +75,10 @@ public static class RazorDependencyAnalyzer
         // Try to resolve targetName to a file path
         // Common pattern: _Layout -> Shared/_Layout.cshtml
         // Or simple name -> search in Shared or current dir
-        
+
         // Simplified resolution: Find any file ending with targetName.cshtml or .razor
         // This is a heuristic and might have collisions, but good enough for 90%
-        
+
         string targetKey = null;
 
         foreach (var key in graph.Keys)
