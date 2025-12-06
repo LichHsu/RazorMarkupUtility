@@ -91,7 +91,11 @@ internal class Program
         return JsonSerializer.Serialize(graph, _jsonPrettyOptions);
     }
 
-    // --- Existing Tools Wrappers if not in ToolHandlers ---
-    // Note: Previous migration put existing tools in ToolHandlers.cs with [McpTool]
-    // So we don't need to re-implement valid ones here.
+    [McpTool("get_implicit_dependencies", "分析 Razor 專案的隱式依賴 (ViewImports, App.razor)。")]
+    public static string GetImplicitDependencies([McpParameter("專案根目錄")] string rootPath)
+    {
+        var analyzer = new RazorImplicitDependencyAnalyzer(rootPath);
+        var deps = analyzer.AnalyzeImplicitDependencies();
+        return JsonSerializer.Serialize(deps, _jsonPrettyOptions);
+    }
 }
