@@ -86,6 +86,13 @@ public static class ToolHandlers
 
     public static string HandleSplitRazorBatch(JsonElement args)
     {
+        // 1. Check for file-based input first (Standardization)
+        if (args.TryGetProperty("pathsFilePath", out var pfp))
+        {
+            string filePath = pfp.GetString()!;
+            return RazorSplitter.BatchSplit(filePath);
+        }
+
         var paths = new List<string>();
 
         if (args.TryGetProperty("paths", out var p))
@@ -110,10 +117,17 @@ public static class ToolHandlers
 
         if (paths.Count == 0)
         {
-            throw new ArgumentException("Must provide 'paths' or 'directory' containing .razor files.");
+            throw new ArgumentException("Must provide 'paths', 'pathsFilePath' or 'directory' containing .razor files.");
         }
 
         return RazorSplitter.BatchSplit(paths.Distinct());
+    }
+
+    public static string HandleScanRazorOrphans(JsonElement args)
+    {
+        string path = args.GetProperty("path").GetString()!;
+        var orphans = RazorOrphanScanner.ScanOrphans(path);
+        return JsonSerializer.Serialize(orphans, _jsonOptions);
     }
 
     public static string HandleBatchRenameClassUsage(JsonElement args)

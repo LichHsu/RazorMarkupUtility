@@ -225,6 +225,7 @@ internal class Program
                     properties = new
                     {
                         paths = new { type = "array", items = new { type = "string" }, description = "List of file paths" },
+                        pathsFilePath = new { type = "string", description = "Path to a file containing a list of paths (JSON array or line-separated). Prioritized over 'paths'." },
                         directory = new { type = "string", description = "Directory to search for .razor files" },
                         recursive = new { type = "boolean", description = "Whether to search recursively (default false)" }
                     }
@@ -261,6 +262,20 @@ internal class Program
                         recursive = new { type = "boolean", description = "Whether to scan recursively (default true)" }
                     }
                 }
+            },
+            new
+            {
+                name = "scan_razor_orphans",
+                description = "Scans a Razor file for used CSS classes that are NOT defined in its scoped CSS file.",
+                inputSchema = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        path = new { type = "string", description = "Path to the .razor file" }
+                    },
+                    required = new[] { "path" }
+                }
             }
         ];
     }
@@ -281,6 +296,7 @@ internal class Program
             "split_razor_batch" => ToolHandlers.HandleSplitRazorBatch(args),
             "batch_rename_class_usage" => ToolHandlers.HandleBatchRenameClassUsage(args),
             "get_used_css_classes" => ToolHandlers.HandleGetUsedCssClasses(args),
+            "scan_razor_orphans" => ToolHandlers.HandleScanRazorOrphans(args),
             _ => throw new Exception($"Unknown tool: {name}")
         };
 

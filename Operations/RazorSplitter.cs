@@ -94,4 +94,35 @@ namespace {namespaceName}
         sb.Insert(0, $"Batch Split Complete. Success: {successCount}, Failed: {failCount}\n");
         return sb.ToString();
     }
+
+    public static string BatchSplit(string pathsFilePath)
+    {
+        if (!File.Exists(pathsFilePath))
+        {
+            throw new FileNotFoundException("Paths file not found", pathsFilePath);
+        }
+
+        // Handle both JSON array and line-separated text
+        string content = File.ReadAllText(pathsFilePath);
+        IEnumerable<string> paths;
+
+        if (content.TrimStart().StartsWith("["))
+        {
+            try 
+            {
+                paths = System.Text.Json.JsonSerializer.Deserialize<string[]>(content) ?? Array.Empty<string>();
+            }
+            catch
+            {
+                // Fallback to line-based if JSON fails
+                paths = File.ReadLines(pathsFilePath);
+            }
+        }
+        else
+        {
+            paths = File.ReadLines(pathsFilePath);
+        }
+
+        return BatchSplit(paths.Where(p => !string.IsNullOrWhiteSpace(p)));
+    }
 }
