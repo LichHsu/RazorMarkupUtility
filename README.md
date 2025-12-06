@@ -14,6 +14,8 @@ Analyzes Razor structure and dependencies.
         *   `ImplicitDeps`: Maps `_ViewImports` and `App.razor` scopes.
         *   `UsedClasses`: Lists all CSS classes used in the file/project.
         *   `Orphans`: Identifies classes used but not defined in scoped CSS.
+        *   `Validation`: (**NEW**) Checks for HTML syntax errors.
+        *   `Patterns`: (**NEW**) Identifies duplicate HTML structures.
     *   `options` (json string): `{ "recursive": true }`
 
 ### 2. `inspect_razor_dom`
@@ -26,13 +28,8 @@ Inspects the DOM structure of a Razor file using XPath.
 Modifies the DOM structure of a Razor file.
 *   **Parameters**:
     *   `path` (string): Path to the Razor file.
-    *   `xpath` (string): Target node.
-    *   `operation` (string):
-        *   `Update`: Changes InnerHtml or Attributes.
-        *   `Wrap`: Wraps the element in a new tag.
-        *   `Append`: Appends a child element.
-    *   `content` (string): New HTML or Wrapper Tag.
-    *   `attributesJson` (json string, optional): Attributes to set.
+    *   `operationsJson` (json string): (**NEW**) List of operations for batch processing.
+        *   `[{ "type": "Update", "xpath": "...", "content": "..." }, ...]`
 
 ### 4. `refactor_razor`
 Performs high-level refactoring operations.

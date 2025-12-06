@@ -36,7 +36,7 @@ internal class Program
             return;
         }
 
-        var server = new McpServer("razor-markup-utility", "2.0.0");
+        var server = new McpServer("razor-markup-utility", "2.1.0");
         server.RegisterToolsFromAssembly(System.Reflection.Assembly.GetExecutingAssembly());
         await server.RunAsync(args);
     }
@@ -45,11 +45,11 @@ internal class Program
     // Core Tools (Consolidated)
     // =========================================================================================
 
-    [McpTool("analyze_razor", "分析 Razor 專案結構、依賴關係與代碼使用狀況。")]
+    [McpTool("analyze_razor", "分析 Razor 專案結構、依賴關係、與代碼使用狀況。")]
     public static string AnalyzeRazor(
-        [McpParameter("分析目標路徑 (檔案或目錄，視類型而定)")] string path,
-        [McpParameter("分析類型 (TagHelpers, Dependencies, ImplicitDeps, UsedClasses, Orphans)")] string analysisType,
-        [McpParameter("選用參數 (JSON): { recursive: bool }", false)] string optionsJson = "{}")
+        [McpParameter("分析目標路徑")] string path,
+        [McpParameter("分析類型 (TagHelpers, Dependencies, ImplicitDeps, UsedClasses, Orphans, Validation, Patterns)")] string analysisType,
+        [McpParameter("選用參數 (JSON)", false)] string optionsJson = "{}")
     {
         var options = JsonSerializer.Deserialize<JsonElement>(optionsJson);
         bool recursive = true;
@@ -70,21 +70,23 @@ internal class Program
         }
         else if (analysisType.Equals("UsedClasses", StringComparison.OrdinalIgnoreCase))
         {
-             // 判斷 path 是檔案還是目錄
              if (Directory.Exists(path))
-             {
                  return JsonSerializer.Serialize(RazorAnalyzer.GetUsedClassesFromDirectory(path, recursive), _jsonPrettyOptions);
-             }
              if (File.Exists(path))
-             {
-                 var classes = RazorAnalyzer.GetUsedClasses(File.ReadAllText(path));
-                 return JsonSerializer.Serialize(classes, _jsonPrettyOptions);
-             }
+                 return JsonSerializer.Serialize(RazorAnalyzer.GetUsedClasses(File.ReadAllText(path)), _jsonPrettyOptions);
              throw new FileNotFoundException("Path not found", path);
         }
         else if (analysisType.Equals("Orphans", StringComparison.OrdinalIgnoreCase))
         {
             return JsonSerializer.Serialize(RazorOrphanScanner.ScanOrphans(path), _jsonPrettyOptions);
+        }
+        else if (analysisType.Equals("Validation", StringComparison.OrdinalIgnoreCase))
+        {
+            return JsonSerializer.Serialize(RazorValidator.ValidateFile(path), _jsonPrettyOptions);
+        }
+        else if (analysisType.Equals("Patterns", StringComparison.OrdinalIgnoreCase))
+        {
+            return JsonSerializer.Serialize(RazorPatternAnalyzer.AnalyzePatterns(path), _jsonPrettyOptions);
         }
 
         throw new ArgumentException($"未知的分析類型: {analysisType}");
@@ -99,51 +101,41 @@ internal class Program
         string content = File.ReadAllText(path);
 
         if (string.IsNullOrEmpty(xpath))
-        {
             return JsonSerializer.Serialize(RazorDomParser.GetStructure(content), _jsonPrettyOptions);
-        }
         else
-        {
             return JsonSerializer.Serialize(RazorDomParser.QueryElements(content, xpath), _jsonPrettyOptions);
-        }
     }
 
-    [McpTool("edit_razor_dom", "修改 Razor DOM 結構 (Update, Wrap, Append)。")]
+    [McpTool("edit_razor_dom", "批次修改 Razor DOM 結構。")]
     public static string EditRazorDom(
         [McpParameter("Razor 檔案路徑")] string path,
-        [McpParameter("目標節點 XPath")] string xpath,
-        [McpParameter("操作類型 (Update, Wrap, Append)")] string operation,
-        [McpParameter("內容 (HTML 或 Wrapper Tag)")] string content,
-        [McpParameter("屬性 (JSON Dictionary)", false)] string attributesJson = "{}")
+        [McpParameter("操作列表 (JSON Array of ops)")] string operationsJson)
     {
         if (!File.Exists(path)) throw new FileNotFoundException("File not found", path);
-        
         string fileContent = File.ReadAllText(path);
-        var attributes = JsonSerializer.Deserialize<Dictionary<string, string>>(attributesJson, _jsonOptions);
-        string newFileContent = fileContent;
+        
+        var operations = JsonSerializer.Deserialize<List<RazorOperation>>(operationsJson, _jsonOptions);
+        if (operations == null) return "No operations provided.";
 
-        if (operation.Equals("Update", StringComparison.OrdinalIgnoreCase))
+        // In-memory sequential processing
+        foreach (var op in operations)
         {
-            // content 視為 InnerHtml
-            newFileContent = RazorDomModifier.UpdateElement(fileContent, xpath, content, attributes);
-        }
-        else if (operation.Equals("Wrap", StringComparison.OrdinalIgnoreCase))
-        {
-            // content 視為 Wrapper Tag (e.g., "div")
-            newFileContent = RazorDomModifier.WrapElement(fileContent, xpath, content, attributes);
-        }
-        else if (operation.Equals("Append", StringComparison.OrdinalIgnoreCase))
-        {
-            // content 視為 New HTML
-            newFileContent = RazorDomModifier.AppendElement(fileContent, xpath, content);
-        }
-        else
-        {
-            throw new ArgumentException($"未知的操作類型: {operation}");
+            if (op.Type.Equals("Update", StringComparison.OrdinalIgnoreCase))
+            {
+                fileContent = RazorDomModifier.UpdateElement(fileContent, op.Xpath, op.Content, op.Attributes);
+            }
+            else if (op.Type.Equals("Wrap", StringComparison.OrdinalIgnoreCase))
+            {
+                fileContent = RazorDomModifier.WrapElement(fileContent, op.Xpath, op.Content, op.Attributes);
+            }
+            else if (op.Type.Equals("Append", StringComparison.OrdinalIgnoreCase))
+            {
+                fileContent = RazorDomModifier.AppendElement(fileContent, op.Xpath, op.Content);
+            }
         }
 
-        File.WriteAllText(path, newFileContent);
-        return $"操作 {operation} 成功執行於 {path}";
+        File.WriteAllText(path, fileContent);
+        return $"成功執行 {operations.Count} 個 DOM 操作於 {path}";
     }
 
     [McpTool("refactor_razor", "執行進階重構 (Split, BatchRenameClass)。")]
@@ -156,15 +148,10 @@ internal class Program
 
         if (refactoringType.Equals("Split", StringComparison.OrdinalIgnoreCase))
         {
-            // 判斷是單檔還是目錄
-            if (File.Exists(path))
-            {
-                 return RazorSplitter.SplitFile(path);
-            }
+            if (File.Exists(path)) return RazorSplitter.SplitFile(path);
             if (Directory.Exists(path))
             {
-                 // 批次分割
-                 var files = Directory.GetFiles(path, "*.razor", SearchOption.AllDirectories); // 預設遞迴?
+                 var files = Directory.GetFiles(path, "*.razor", SearchOption.AllDirectories);
                  return RazorSplitter.BatchSplit(files);
             }
              throw new FileNotFoundException("Path not found", path);
@@ -188,4 +175,12 @@ internal class Program
 
         throw new ArgumentException($"未知的重構類型: {refactoringType}");
     }
+}
+
+public class RazorOperation
+{
+    public string Type { get; set; } = ""; // Update, Wrap, Append
+    public string Xpath { get; set; } = "";
+    public string Content { get; set; } = "";
+    public Dictionary<string, string>? Attributes { get; set; }
 }
