@@ -65,6 +65,20 @@ internal class Program
                 Console.WriteLine(JsonSerializer.Serialize(result, _jsonPrettyOptions));
                 return;
             }
+
+            if (args[0] == "get-deps")
+            {
+                string root = args[1];
+                Console.WriteLine(GetRazorDependencies(root));
+                return;
+            }
+
+            if (args[0] == "get-implicit")
+            {
+                string root = args[1];
+                Console.WriteLine(GetImplicitDependencies(root));
+                return;
+            }
         }
 
         var server = new McpServer("razor-markup-utility", "1.0.0");
