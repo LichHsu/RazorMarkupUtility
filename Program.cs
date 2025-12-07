@@ -29,6 +29,12 @@ internal class Program
             return;
         }
 
+        if (args.Length > 0 && (args[0] == "audit" || args[0] == "--scan"))
+        {
+            RazorMarkupUtility.Core.CliHandler.Handle(args);
+            return;
+        }
+
         var server = new McpServer("razor-markup-utility", "2.2.0");
         server.RegisterToolsFromAssembly(System.Reflection.Assembly.GetExecutingAssembly());
         await server.RunAsync(args);
