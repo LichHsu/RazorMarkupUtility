@@ -15,4 +15,10 @@
     <ProjectReference Include="..\Lichs.MCP.Core\Lichs.MCP.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="tailwind-ignore.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
