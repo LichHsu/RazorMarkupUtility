@@ -66,6 +66,16 @@ public static class RazorDomParser
         var doc = Load(content);
         var nodes = doc.DocumentNode.SelectNodes(xpath);
 
+        // Fallback: If no nodes found, try lowercase query because HAP normalizes tag names
+        if (nodes == null || nodes.Count == 0)
+        {
+            var xpathLower = xpath.ToLowerInvariant();
+            if (xpath != xpathLower)
+            {
+                nodes = doc.DocumentNode.SelectNodes(xpathLower);
+            }
+        }
+
         if (nodes == null) return new List<RazorDomItem>();
 
         return nodes.Select(ConvertNode).ToList();
