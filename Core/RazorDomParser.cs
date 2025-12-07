@@ -38,7 +38,7 @@ public static class RazorDomParser
     {
         var element = new RazorDomItem
         {
-            Type = node.Name, // Map to Type
+            Type = node.OriginalName, // Map to Type (Preserve Case)
             Id = node.GetAttributeValue("id", null),
             Class = node.GetAttributeValue("class", null),
             XPath = node.XPath,
