@@ -65,8 +65,8 @@ public static class CliHandler
              return;
         }
 
-        var files = Directory.GetFiles(path, "*.razor", SearchOption.AllDirectories);
-        Console.WriteLine($"Found {files.Length} Razor files.");
+        var files = GetFilesRecursively(path, "*.razor");
+        Console.WriteLine($"Found {files.Count} Razor files.");
         Console.WriteLine("---------------------------------------------------");
 
         int totalErrors = 0;
@@ -115,7 +115,7 @@ public static class CliHandler
 
         Console.WriteLine("---------------------------------------------------");
         Console.WriteLine($"Audit Complete.");
-        Console.WriteLine($"Files Scanned: {files.Length}");
+        Console.WriteLine($"Files Scanned: {files.Count}");
         Console.WriteLine($"Parse Errors: {totalErrors}");
         
         if (totalOrphans > 0)
@@ -130,5 +130,44 @@ public static class CliHandler
              Console.WriteLine("No orphan classes found in scoped files.");
              Console.ResetColor();
         }
+    }
+
+    private static List<string> GetFilesRecursively(string path, string searchPattern)
+    {
+        var result = new List<string>();
+        try
+        {
+            // Add files in current directory
+            foreach (var file in Directory.GetFiles(path, searchPattern))
+            {
+                var fileName = Path.GetFileName(file);
+                if (fileName.StartsWith(".")) continue; // Skip hidden/dot files
+                result.Add(file);
+            }
+
+            // Recurse into subdirectories
+            foreach (var dir in Directory.GetDirectories(path))
+            {
+                var dirName = Path.GetFileName(dir);
+                // Exclude bin, obj, and hidden directories
+                if (dirName.Equals("bin", StringComparison.OrdinalIgnoreCase) ||
+                    dirName.Equals("obj", StringComparison.OrdinalIgnoreCase) ||
+                    dirName.StartsWith("."))
+                {
+                    continue;
+                }
+                
+                result.AddRange(GetFilesRecursively(dir, searchPattern));
+            }
+        }
+        catch (UnauthorizedAccessException) 
+        { 
+            // Ignore permission errors 
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Warning] Failed to scan directory {path}: {ex.Message}");
+        }
+        return result;
     }
 }
