@@ -17,11 +17,11 @@ public static class RazorDomParser
         return doc;
     }
 
-    public static List<RazorElement> GetStructure(string content)
+    public static List<RazorDomItem> GetStructure(string content)
     {
         var doc = Load(content);
         var rootNodes = doc.DocumentNode.ChildNodes;
-        var result = new List<RazorElement>();
+        var result = new List<RazorDomItem>();
 
         foreach (var node in rootNodes)
         {
@@ -34,11 +34,11 @@ public static class RazorDomParser
         return result;
     }
 
-    private static RazorElement ConvertNode(HtmlNode node)
+    private static RazorDomItem ConvertNode(HtmlNode node)
     {
-        var element = new RazorElement
+        var element = new RazorDomItem
         {
-            TagName = node.Name,
+            Type = node.Name, // Map to Type
             Id = node.GetAttributeValue("id", null),
             Class = node.GetAttributeValue("class", null),
             XPath = node.XPath,
@@ -61,12 +61,12 @@ public static class RazorDomParser
         return element;
     }
 
-    public static List<RazorElement> QueryElements(string content, string xpath)
+    public static List<RazorDomItem> QueryElements(string content, string xpath)
     {
         var doc = Load(content);
         var nodes = doc.DocumentNode.SelectNodes(xpath);
 
-        if (nodes == null) return new List<RazorElement>();
+        if (nodes == null) return new List<RazorDomItem>();
 
         return nodes.Select(ConvertNode).ToList();
     }

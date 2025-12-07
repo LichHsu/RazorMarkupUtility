@@ -58,10 +58,16 @@ public static class RazorParser
     {
         string newContent = content;
 
+        // Remove Razor comments @* ... *@
+        newContent = Regex.Replace(newContent, @"@\*.*?\*@", "", RegexOptions.Singleline);
+
         // Remove @code block
         // Remove @code block using Regex with balancing groups to handle nested braces
         // Matches @code { ... }
         newContent = Regex.Replace(newContent, @"@code\s*\{((?>[^{}]+|\{(?<DEPTH>)|\}(?<-DEPTH>))*(?(DEPTH)(?!)))\}", "", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+
+        // Remove @functions block (similar to @code)
+        newContent = Regex.Replace(newContent, @"@functions\s*\{((?>[^{}]+|\{(?<DEPTH>)|\}(?<-DEPTH>))*(?(DEPTH)(?!)))\}", "", RegexOptions.Singleline | RegexOptions.IgnoreCase);
 
         // Remove <style> block
         newContent = Regex.Replace(newContent, @"<style[^>]*>.*?</style>", "", RegexOptions.Singleline | RegexOptions.IgnoreCase);

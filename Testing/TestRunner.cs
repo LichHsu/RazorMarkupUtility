@@ -104,10 +104,10 @@ public static class TestRunner
         var structure = RazorDomParser.GetStructure(html);
 
         Assert(structure.Count == 1, "Should have 1 root element");
-        Assert(structure[0].TagName == "div", "Root tag should be div");
+        Assert(structure[0].Type == "div", "Root tag should be div"); // Changed TagName to Type
         Assert(structure[0].Id == "test", "Id should be test");
         Assert(structure[0].Children.Count == 1, "Should have 1 child");
-        Assert(structure[0].Children[0].TagName == "span", "Child tag should be span");
+        Assert(structure[0].Children[0].Type == "span", "Child tag should be span"); // Changed TagName to Type
     }
 
     private static void TestRazorSyntaxHandling()
@@ -164,6 +164,20 @@ public static class TestRunner
         string html2 = "<div class='a'></div><span class='a'></span>";
         var classes2 = RazorAnalyzer.GetUsedClasses(html2);
         Assert(classes2.Count == 1, "Should have unique classes");
+
+        // Code block dynamic class test
+        string html3 = @"
+        <div class=""static-class""></div>
+        @code {
+            private string GetClass() { return ""dynamic-active""; } // Has hyphen, should be picked up
+            private string GetVar() { return ""variableName""; } // No hyphen, ignored
+            private string GetTailwind() { return ""absolute""; } // Known safe word, picked up
+        }";
+        var classes3 = RazorAnalyzer.GetUsedClasses(html3);
+        Assert(classes3.Contains("static-class"), "Should contain static class");
+        Assert(classes3.Contains("dynamic-active"), "Should contain dynamic class from code");
+        Assert(classes3.Contains("absolute"), "Should contain safe dynamic class");
+        Assert(!classes3.Contains("variableName"), "Should NOT contain variable name");
     }
 
     private static void TestParserNoise()

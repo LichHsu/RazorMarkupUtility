@@ -2,10 +2,14 @@ using System.Text.Json.Serialization;
 
 namespace RazorMarkupUtility.Models;
 
-public class RazorElement
+
+public class RazorDomItem
 {
-    [JsonPropertyName("tagName")]
-    public string TagName { get; set; } = "";
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = ""; // Renamed/Aliased from TagName for consistency with user request (e.g. "div")
+
+    [JsonIgnore]
+    public string TagName => Type; // Backward compatibility alias if needed, or just helpers
 
     [JsonPropertyName("id")]
     public string? Id { get; set; }
@@ -20,7 +24,7 @@ public class RazorElement
     public Dictionary<string, string> Attributes { get; set; } = new();
 
     [JsonPropertyName("children")]
-    public List<RazorElement> Children { get; set; } = new();
+    public List<RazorDomItem> Children { get; set; } = new();
 
     [JsonPropertyName("text")]
     public string? Text { get; set; }
