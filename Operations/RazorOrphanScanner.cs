@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using RazorMarkupUtility.Core;
 
 namespace RazorMarkupUtility.Operations;
 
@@ -21,6 +22,9 @@ public static class RazorOrphanScanner
 
         // 1. Extract used classes from Razor file
         var razorContent = File.ReadAllText(razorPath);
+        // Remove code blocks to prevent false positives from C# code
+        razorContent = RazorParser.RemoveBlocks(razorContent);
+        
         var usedClasses = new HashSet<string>();
 
         foreach (Match match in ClassAttrRegex.Matches(razorContent))

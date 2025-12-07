@@ -59,28 +59,9 @@ public static class RazorParser
         string newContent = content;
 
         // Remove @code block
-        int codeIndex = newContent.IndexOf("@code");
-        if (codeIndex != -1)
-        {
-            int openBraceIndex = newContent.IndexOf('{', codeIndex);
-            if (openBraceIndex != -1)
-            {
-                int balance = 1;
-                int i = openBraceIndex + 1;
-                while (i < newContent.Length && balance > 0)
-                {
-                    if (newContent[i] == '{') balance++;
-                    else if (newContent[i] == '}') balance--;
-                    i++;
-                }
-
-                if (balance == 0)
-                {
-                    // Remove from @code to closing brace
-                    newContent = newContent.Remove(codeIndex, i - codeIndex);
-                }
-            }
-        }
+        // Remove @code block using Regex with balancing groups to handle nested braces
+        // Matches @code { ... }
+        newContent = Regex.Replace(newContent, @"@code\s*\{((?>[^{}]+|\{(?<DEPTH>)|\}(?<-DEPTH>))*(?(DEPTH)(?!)))\}", "", RegexOptions.Singleline | RegexOptions.IgnoreCase);
 
         // Remove <style> block
         newContent = Regex.Replace(newContent, @"<style[^>]*>.*?</style>", "", RegexOptions.Singleline | RegexOptions.IgnoreCase);

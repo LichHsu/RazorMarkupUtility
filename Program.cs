@@ -66,6 +66,21 @@ internal class Program
         }
         else if (analysisType.Equals("Orphans", StringComparison.OrdinalIgnoreCase))
         {
+        if (Directory.Exists(path))
+            {
+                var orphans = new List<string>();
+                var files = Directory.GetFiles(path, "*.razor", recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+                foreach (var file in files)
+                {
+                    try
+                    {
+                        var fileOrphans = RazorOrphanScanner.ScanOrphans(file);
+                        orphans.AddRange(fileOrphans);
+                    }
+                    catch { /* Ignore */ }
+                }
+                return JsonSerializer.Serialize(orphans.Distinct().OrderBy(x => x), _jsonPrettyOptions);
+            }
             return JsonSerializer.Serialize(RazorOrphanScanner.ScanOrphans(path), _jsonPrettyOptions);
         }
         else if (analysisType.Equals("Validation", StringComparison.OrdinalIgnoreCase))

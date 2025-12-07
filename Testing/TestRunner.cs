@@ -31,6 +31,12 @@ public static class TestRunner
         try { TestRazorAnalyzer(); passed++; Console.WriteLine("✓ TestRazorAnalyzer Passed"); }
         catch (Exception ex) { failed++; Console.WriteLine($"✗ TestRazorAnalyzer Failed: {ex.Message}"); }
 
+        try { TestParserNoise(); passed++; Console.WriteLine("✓ TestParserNoise Passed"); }
+        catch (Exception ex) { failed++; Console.WriteLine($"✗ TestParserNoise Failed: {ex.Message}"); }
+
+        try { TestOrphanScanner(); passed++; Console.WriteLine("✓ TestOrphanScanner Passed"); }
+        catch (Exception ex) { failed++; Console.WriteLine($"✗ TestOrphanScanner Failed: {ex.Message}"); }
+
         Console.WriteLine($"=== Tests Completed: {passed} Passed, {failed} Failed ===");
     }
 
@@ -158,6 +164,44 @@ public static class TestRunner
         string html2 = "<div class='a'></div><span class='a'></span>";
         var classes2 = RazorAnalyzer.GetUsedClasses(html2);
         Assert(classes2.Count == 1, "Should have unique classes");
+    }
+
+    private static void TestParserNoise()
+    {
+        string razor = @"
+<div class=""valid-class""></div>
+@code {
+    private bool isVisible = true;
+    [Parameter] public string Title { get; set; } = ""SomeTitle"";
+    private void OnClick() { Console.WriteLine(""Click""); }
+}
+";
+        var classes = RazorAnalyzer.GetUsedClasses(razor);
+        
+        Assert(classes.Contains("valid-class"), "Should contain 'valid-class'");
+        Assert(!classes.Contains("bool"), "Should NOT contain 'bool'");
+        Assert(!classes.Contains("true"), "Should NOT contain 'true'");
+        Assert(!classes.Contains("SomeTitle"), "Should NOT contain 'SomeTitle' (string literal in code)");
+        Assert(!classes.Contains("Click"), "Should NOT contain 'Click' (string literal in code)");
+    }
+
+    private static void TestOrphanScanner()
+    {
+        // Integration simulation
+        string testDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestOrphans");
+        Directory.CreateDirectory(testDir);
+        string razorFile = Path.Combine(testDir, "Comp.razor");
+        File.WriteAllText(razorFile, "<div class='orphan'></div>");
+        
+        // Ensure no .css file exists
+        if (File.Exists(razorFile + ".css")) File.Delete(razorFile + ".css");
+
+        var orphans = Operations.RazorOrphanScanner.ScanOrphans(razorFile);
+        
+        Assert(orphans.Contains("orphan"), "Should find orphan class");
+        Assert(orphans.Count == 1, "Should have 1 orphan");
+
+        Directory.Delete(testDir, true);
     }
 
     private static void Assert(bool condition, string message)

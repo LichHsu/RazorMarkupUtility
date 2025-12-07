@@ -33,7 +33,11 @@ public static class RazorAnalyzer
         // V2.3 Enhance: Scan for C# string literals that might be CSS classes (e.g. in @code blocks or ternary ops)
         // Pattern: "words-with-dashes" or "tailwind:patterns"
         // Avoid aggressive matching of standard code
-        var stringMatches = Regex.Matches(content, @"\""([a-zA-Z0-9\-_: ]+)\""");
+        // V2.3 Enhance: Scan for C# string literals that might be CSS classes (e.g. in @code blocks or ternary ops)
+        // Pattern: "words-with-dashes" or "tailwind:patterns"
+        // Avoid aggressive matching of standard code by removing @code blocks first
+        string cleanContent = RazorParser.RemoveBlocks(content);
+        var stringMatches = Regex.Matches(cleanContent, @"\""([a-zA-Z0-9\-_: ]+)\""");
         foreach (Match match in stringMatches)
         {
             var value = match.Groups[1].Value;
