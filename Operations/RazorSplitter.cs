@@ -23,14 +23,36 @@ public static class RazorSplitter
             string csPath = Path.Combine(directory, $"{fileNameWithoutExt}.razor.cs");
 
             // Try to find namespace
-            string namespaceName = "MyApp.Components"; // Default
+            string namespaceName = "MyApp.Components"; // Fallback Default
 
-            // Infer namespace from file content if possible
-            // Simple check for @namespace
+            // 1. Try explicit @namespace directive
             var namespaceMatch = System.Text.RegularExpressions.Regex.Match(content, @"@namespace\s+([\w\.]+)");
             if (namespaceMatch.Success)
             {
                 namespaceName = namespaceMatch.Groups[1].Value;
+            }
+            else
+            {
+                // 2. Try infer from directory structure (Project Root)
+                string? projectFile = FindProjectFile(directory);
+                if (projectFile != null)
+                {
+                    string projectName = Path.GetFileNameWithoutExtension(projectFile);
+                    string projectDir = Path.GetDirectoryName(projectFile) ?? "";
+                    
+                    if (directory.StartsWith(projectDir))
+                    {
+                        string relativePath = directory.Substring(projectDir.Length).TrimStart(Path.DirectorySeparatorChar);
+                        if (!string.IsNullOrEmpty(relativePath))
+                        {
+                            namespaceName = $"{projectName}.{relativePath.Replace(Path.DirectorySeparatorChar, '.')}";
+                        }
+                        else
+                        {
+                            namespaceName = projectName;
+                        }
+                    }
+                }
             }
 
             string classContent = $@"using System;
@@ -124,5 +146,20 @@ namespace {namespaceName}
         }
 
         return BatchSplit(paths.Where(p => !string.IsNullOrWhiteSpace(p)));
+    }
+
+    private static string? FindProjectFile(string startDirectory)
+    {
+        var dir = new DirectoryInfo(startDirectory);
+        while (dir != null)
+        {
+            var files = dir.GetFiles("*.csproj");
+            if (files.Length > 0)
+            {
+                return files[0].FullName;
+            }
+            dir = dir.Parent;
+        }
+        return null;
     }
 }
