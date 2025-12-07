@@ -70,9 +70,52 @@ internal class Program
                 return JsonSerializer.Serialize(RazorAnalyzer.GetUsedClasses(File.ReadAllText(path)), _jsonPrettyOptions);
             throw new FileNotFoundException("Path not found", path);
         }
-        else if (analysisType.Equals("Orphans", StringComparison.OrdinalIgnoreCase))
+        if (analysisType.Equals("Orphans", StringComparison.OrdinalIgnoreCase))
         {
-        if (Directory.Exists(path))
+            // Prepare Whitelist & Ignore Patterns
+            HashSet<string> globalWhitelist = new();
+            if (!string.IsNullOrEmpty(options.GlobalCssPath) && File.Exists(options.GlobalCssPath))
+            {
+                try
+                {
+                    var cssContent = File.ReadAllText(options.GlobalCssPath);
+                    var regex = new System.Text.RegularExpressions.Regex(@"\.(-?[_a-zA-Z]+[_a-zA-Z0-9-]*)");
+                    foreach (System.Text.RegularExpressions.Match match in regex.Matches(cssContent))
+                    {
+                        globalWhitelist.Add(match.Groups[1].Value);
+                    }
+                }
+                catch { /* Log error? */ }
+            }
+
+            List<System.Text.RegularExpressions.Regex> ignorePatterns = new();
+            string? ignorePath = options.IgnoreFilePath;
+            
+            // Default Auto-Discovery
+            if (string.IsNullOrEmpty(ignorePath))
+            {
+                string defaultIgnore = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tailwind-ignore.txt");
+                if (File.Exists(defaultIgnore)) ignorePath = defaultIgnore;
+            }
+
+            if (!string.IsNullOrEmpty(ignorePath) && File.Exists(ignorePath))
+            {
+                try
+                {
+                    var lines = File.ReadAllLines(ignorePath);
+                    foreach (var line in lines)
+                    {
+                        var trimmed = line.Trim();
+                        if (!string.IsNullOrEmpty(trimmed) && !trimmed.StartsWith("#"))
+                        {
+                             ignorePatterns.Add(new System.Text.RegularExpressions.Regex(trimmed, System.Text.RegularExpressions.RegexOptions.Compiled));
+                        }
+                    }
+                }
+                catch { /* Log error? */ }
+            }
+
+            if (Directory.Exists(path))
             {
                 var orphans = new List<string>();
                 var files = Directory.GetFiles(path, "*.razor", recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
@@ -80,14 +123,14 @@ internal class Program
                 {
                     try
                     {
-                        var fileOrphans = RazorOrphanScanner.ScanOrphans(file);
+                        var fileOrphans = RazorOrphanScanner.ScanOrphans(file, globalWhitelist, ignorePatterns);
                         orphans.AddRange(fileOrphans);
                     }
                     catch { /* Ignore */ }
                 }
                 return JsonSerializer.Serialize(orphans.Distinct().OrderBy(x => x), _jsonPrettyOptions);
             }
-            return JsonSerializer.Serialize(RazorOrphanScanner.ScanOrphans(path), _jsonPrettyOptions);
+            return JsonSerializer.Serialize(RazorOrphanScanner.ScanOrphans(path, globalWhitelist, ignorePatterns), _jsonPrettyOptions);
         }
         else if (analysisType.Equals("Validation", StringComparison.OrdinalIgnoreCase))
         {

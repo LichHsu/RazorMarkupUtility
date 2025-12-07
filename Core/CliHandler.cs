@@ -65,6 +65,18 @@ public static class CliHandler
             }
 
             List<System.Text.RegularExpressions.Regex> ignorePatterns = new();
+            
+            // Auto-Discovery: If no specific file provided, check for default 'tailwind-ignore.txt' in app directory
+            if (string.IsNullOrEmpty(ignoreFilePath))
+            {
+                string defaultIgnore = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tailwind-ignore.txt");
+                if (File.Exists(defaultIgnore))
+                {
+                    Console.WriteLine($"[Config] Auto-detected default ignore file: {defaultIgnore}");
+                    ignoreFilePath = defaultIgnore;
+                }
+            }
+
             if (!string.IsNullOrEmpty(ignoreFilePath) && File.Exists(ignoreFilePath))
             {
                 Console.WriteLine($"[Config] Loading Ignore Patterns from: {ignoreFilePath}");
