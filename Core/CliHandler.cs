@@ -15,12 +15,25 @@ public static class CliHandler
         if (command == "audit" && subCommand == "razor")
         {
             string? path = null;
+            string? globalCssPath = null;
+            string? ignoreFilePath = null;
+
             for (int i = 2; i < args.Length; i++)
             {
                 if (args[i] == "--path" && i + 1 < args.Length)
                 {
                     path = args[i + 1];
-                    break;
+                    i++; // Skip next arg
+                }
+                else if (args[i] == "--global-css" && i + 1 < args.Length)
+                {
+                    globalCssPath = args[i + 1];
+                    i++;
+                }
+                else if (args[i] == "--ignore-file" && i + 1 < args.Length)
+                {
+                    ignoreFilePath = args[i + 1];
+                    i++;
                 }
             }
 
@@ -30,7 +43,57 @@ public static class CliHandler
                 return;
             }
 
-            RunRazorAudit(path);
+            HashSet<string> globalWhitelist = new();
+            if (!string.IsNullOrEmpty(globalCssPath) && File.Exists(globalCssPath))
+            {
+                Console.WriteLine($"[Config] Loading Global CSS Whitelist from: {globalCssPath}");
+                try
+                {
+                    var cssContent = File.ReadAllText(globalCssPath);
+                    // Match simple class definitions .classname
+                    var regex = new System.Text.RegularExpressions.Regex(@"\.(-?[_a-zA-Z]+[_a-zA-Z0-9-]*)");
+                    foreach (System.Text.RegularExpressions.Match match in regex.Matches(cssContent))
+                    {
+                        globalWhitelist.Add(match.Groups[1].Value);
+                    }
+                    Console.WriteLine($"[Config] Loaded {globalWhitelist.Count} global classes.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[Warning] Failed to load global CSS: {ex.Message}");
+                }
+            }
+
+            List<System.Text.RegularExpressions.Regex> ignorePatterns = new();
+            if (!string.IsNullOrEmpty(ignoreFilePath) && File.Exists(ignoreFilePath))
+            {
+                Console.WriteLine($"[Config] Loading Ignore Patterns from: {ignoreFilePath}");
+                try
+                {
+                    var lines = File.ReadAllLines(ignoreFilePath);
+                    foreach (var line in lines)
+                    {
+                        var trimmed = line.Trim();
+                        if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("#")) continue;
+                        
+                        try 
+                        {
+                            ignorePatterns.Add(new System.Text.RegularExpressions.Regex(trimmed, System.Text.RegularExpressions.RegexOptions.Compiled));
+                        }
+                        catch (Exception regexEx)
+                        {
+                             Console.WriteLine($"[Warning] Invalid regex pattern '{trimmed}': {regexEx.Message}");
+                        }
+                    }
+                    Console.WriteLine($"[Config] Loaded {ignorePatterns.Count} ignore patterns.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[Warning] Failed to load ignore file: {ex.Message}");
+                }
+            }
+
+            RunRazorAudit(path, globalWhitelist, ignorePatterns);
         }
         else if (command == "--scan") // Keep backward compatibility for IPC if needed, or deprecate
         {
@@ -56,7 +119,7 @@ public static class CliHandler
         }
     }
 
-    private static void RunRazorAudit(string path)
+    private static void RunRazorAudit(string path, HashSet<string> globalWhitelist, List<System.Text.RegularExpressions.Regex> ignorePatterns)
     {
         Console.WriteLine($"[Razor Audit] Scanning directory: {path}");
         if (!Directory.Exists(path))
@@ -84,10 +147,8 @@ public static class CliHandler
                 string cssFile = file + ".css";
                 List<string> orphans = new();
                 
-                if (File.Exists(cssFile))
-                {
-                    orphans = RazorOrphanScanner.ScanOrphans(file);
-                }
+                // Auto-scan with generic patterns
+                orphans = RazorOrphanScanner.ScanOrphans(file, globalWhitelist, ignorePatterns);
 
                 if (orphans.Count > 0)
                 {

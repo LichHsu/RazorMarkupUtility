@@ -14,8 +14,10 @@ public static class RazorOrphanScanner
     /// Uses DOM parsing to avoid false positives from @code blocks.
     /// </summary>
     /// <param name="razorPath">Path to the .razor file.</param>
+    /// <param name="globalWhitelist">Optional set of globally defined classes to ignore.</param>
+    /// <param name="ignorePatterns">Optional list of Regex patterns to ignore (e.g. for Tailwind).</param>
     /// <returns>A list of locally undefined CSS classes.</returns>
-    public static List<string> ScanOrphans(string razorPath)
+    public static List<string> ScanOrphans(string razorPath, HashSet<string>? globalWhitelist = null, IEnumerable<Regex>? ignorePatterns = null)
     {
         if (!File.Exists(razorPath))
         {
@@ -45,6 +47,18 @@ public static class RazorOrphanScanner
 
         // 3. Find candidates (Used - Defined)
         usedClasses.ExceptWith(definedClasses);
+        
+        // 4. Check Global Whitelist
+        if (globalWhitelist != null && globalWhitelist.Count > 0)
+        {
+            usedClasses.ExceptWith(globalWhitelist);
+        }
+
+        // 5. Check Ignore Patterns (Regex)
+        if (ignorePatterns != null)
+        {
+            usedClasses.RemoveWhere(cls => ignorePatterns.Any(p => p.IsMatch(cls)));
+        }
 
         return usedClasses.OrderBy(c => c).ToList();
     }
